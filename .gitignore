@@ -141,3 +141,15 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+node_modules/
+
+app/node_modules/
+
+node_modules/
+
+app/node_modules/
+
+node_modules/
+
+app/node_modules/
