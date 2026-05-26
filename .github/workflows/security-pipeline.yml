@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build-and-test:
+  build-test-and-sast:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,18 @@ jobs:
       - name: Run tests
         working-directory: ./app
         run: npm test
+
+      - name: Install Semgrep
+        run: python -m pip install semgrep
+
+      - name: Run Semgrep SAST scan
+        run: semgrep scan --config p/javascript --config p/security-audit --json --output semgrep-report.json app
+
+      - name: Upload Semgrep report
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-sast-report
+          path: semgrep-report.json
 
       - name: Build Docker image
         run: docker build -t devsecops-secure-app .
