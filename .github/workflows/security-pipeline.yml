@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build-test-sast-secrets-vulnscan:
+  full-devsecops-pipeline:
     runs-on: ubuntu-latest
 
     steps:
@@ -80,3 +80,35 @@ jobs:
         with:
           name: trivy-image-report
           path: trivy-image-report.json
+
+      - name: Start application container for DAST
+        run: docker run -d --name devsecops-secure-app -p 3000:3000 devsecops-secure-app
+
+      - name: Wait for application to be ready
+        run: |
+          for i in {1..10}; do
+            if curl -s http://localhost:3000/health; then
+              echo "Application is ready"
+              exit 0
+            fi
+            echo "Waiting for application..."
+            sleep 3
+          done
+          echo "Application did not start in time"
+          exit 1
+
+      - name: Run OWASP ZAP baseline scan
+        run: |
+          docker run --rm --network host -v "${{ github.workspace }}:/zap/wrk/:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://127.0.0.1:3000 -r zap-baseline-report.html -J zap-baseline-report.json -I
+
+      - name: Upload OWASP ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-zap-baseline-report
+          path: |
+            zap-baseline-report.html
+            zap-baseline-report.json
+
+      - name: Stop application container
+        if: always()
+        run: docker rm -f devsecops-secure-app || true
