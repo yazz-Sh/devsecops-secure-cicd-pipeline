@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build-test-sast-secrets:
+  build-test-sast-secrets-vulnscan:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,5 +49,34 @@ jobs:
           name: gitleaks-secret-report
           path: gitleaks-report.json
 
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: trivy-fs-report.json
+          exit-code: 0
+
+      - name: Upload Trivy filesystem report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-filesystem-report
+          path: trivy-fs-report.json
+
       - name: Build Docker image
         run: docker build -t devsecops-secure-app .
+
+      - name: Run Trivy Docker image scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: devsecops-secure-app
+          format: json
+          output: trivy-image-report.json
+          exit-code: 0
+
+      - name: Upload Trivy Docker image report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-report
+          path: trivy-image-report.json
