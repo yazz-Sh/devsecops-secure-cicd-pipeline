@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build-test-and-sast:
+  build-test-sast-secrets:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,6 +38,16 @@ jobs:
         with:
           name: semgrep-sast-report
           path: semgrep-report.json
+
+      - name: Run Gitleaks secret scan
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/repo" ghcr.io/gitleaks/gitleaks:latest dir /repo --redact --report-format=json --report-path=/repo/gitleaks-report.json --exit-code=0
+
+      - name: Upload Gitleaks report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-secret-report
+          path: gitleaks-report.json
 
       - name: Build Docker image
         run: docker build -t devsecops-secure-app .
